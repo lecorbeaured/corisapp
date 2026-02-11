@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Pay Schedule</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Pay Schedule</h1>
+  <p class="sub">Tell CORIS when you get paid so it can plan bills around your paychecks.</p>
+</div>
+
+<div id="schNotice"></div>
+
+<div class="grid two">
+  <div class="card">
+    <h2 class="card-title">Update Schedule</h2>
+
+    <div class="field">
+      <label class="label" for="frequency">How often are you paid?</label>
+      <select id="frequency" class="input" style="width:100%;">
+        <option value="weekly">Weekly</option>
+        <option value="biweekly" selected>Every two weeks</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label" for="nextDate">Next paycheck date</label>
+      <input class="input" id="nextDate" type="date" style="width:100%;"/>
+    </div>
+
+    <div class="field">
+      <label class="label" for="netPay">Take-home pay <span style="opacity:0.5;">(optional)</span></label>
+      <input class="input" id="netPay" type="number" step="0.01" placeholder="0.00" style="width:100%;"/>
+    </div>
+
+    <div class="row" style="gap:8px;">
+      <button class="btn primary" id="saveSch" type="button">Save schedule</button>
+      <button class="btn" id="regenSch" type="button">Regenerate planning</button>
+    </div>
+
+    <p class="small mt-sm" style="line-height:1.5;">Saving builds paycheck windows and assigns bills. Regenerating re-runs the assignment without changing dates.</p>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Current Schedule</h2>
+    <div id="currentSch"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+</div>
+
+<script>
+function formatFreq(f){
+  return { weekly:"Weekly", biweekly:"Every two weeks", monthly:"Monthly" }[f] || f;
+}
+
+async function loadSchedule(){
+  const out = document.getElementById("currentSch");
+  const notice = document.getElementById("schNotice");
+  notice.innerHTML = "";
+  out.innerHTML = spinnerHtml("Loading…");
+  try{
+    if(!requireLogin()) return;
+    const sch = await api(`/v1/schedule/me`, { method:"GET" });
+    if(!sch || !sch.id){
+      out.innerHTML = '<div class="notice warn"><strong>No schedule set</strong><div class="small">Set your pay schedule to unlock paycheck planning.</div></div>';
+      return;
+    }
+    out.innerHTML = `
+      <div class="notice ok">
+        <strong>Active</strong>
+        <div class="small" style="margin-top:6px;">Frequency: ${formatFreq(sch.frequency)}</div>
+        <div class="small">Next paycheck: ${escapeHtml(sch.next_paycheck_date)}</div>
+        <div class="small">Take-home pay: ${sch.typical_net_pay ? "$"+money(sch.typical_net_pay) : "not set"}</div>
+      </div>
+      <div style="margin-top:12px;">
+        <a class="btn btn-sm" href="planning.html">View planning →</a>
+      </div>
+    `;
+    document.getElementById("frequency").value = sch.frequency;
+    document.getElementById("nextDate").value = sch.next_paycheck_date;
+    document.getElementById("netPay").value = sch.typical_net_pay ? sch.typical_net_pay : "";
+  }catch(err){
+    showError(notice, err);
+    out.textContent = "";
+  }
+}
+
+async function saveSchedule(){
+  const notice = document.getElementById("schNotice");
+  notice.innerHTML = "";
+  try{
+    if(!requireLogin()) return;
+
+    const frequency = document.getElementById("frequency").value;
+    const next_paycheck_date = document.getElementById("nextDate").value;
+    const netPayRaw = document.getElementById("netPay").value.trim();
+
+    if(!next_paycheck_date || !/^\d{4}-\d{2}-\d{2}$/.test(next_paycheck_date)){
+      throw new Error("Please select your next paycheck date.");
+    }
+
+    const body = { frequency, next_paycheck_date };
+    if(netPayRaw){
+      const v = Number(netPayRaw);
+      if(isNaN(v) || v <= 0) throw new Error("Net pay must be a positive number.");
+      body.typical_net_pay = v;
+    }
+
+    await api(`/v1/schedule/set`, { method:"POST", body: JSON.stringify(body) });
+    toast("Schedule saved. Planning windows updated.", "ok");
+    await loadSchedule();
+  }catch(err){
+    showError(notice, err);
+  }
+}
+
+async function regenPlanning(){
+  const notice = document.getElementById("schNotice");
+  notice.innerHTML = "";
+  try{
+    if(!requireLogin()) return;
+    await api(`/v1/schedule/regenerate`, { method:"POST" });
+    toast("Planning regenerated.", "ok");
+  }catch(err){
+    showError(notice, err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("saveSch").addEventListener("click", saveSchedule);
+  document.getElementById("regenSch").addEventListener("click", regenPlanning);
+  loadSchedule();
+});
+</script>
+</body>
+</html>

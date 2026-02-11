@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Signup</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <a class="btn" href="login.html">Login</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-layout">
+    <div class="auth-card">
+      <div class="card accent-top">
+        <h1 class="h1">Create your account</h1>
+        <p class="sub">Start tracking bills in minutes.</p>
+
+        <div id="authNotice"></div>
+
+        <div class="field">
+          <label class="label" for="email">Email</label>
+          <input class="input" id="email" type="email" placeholder="you@example.com"/>
+        </div>
+
+        <div class="field">
+          <label class="label" for="password">Password</label>
+          <input class="input" id="password" type="password" placeholder="At least 8 characters"/>
+        </div>
+
+        <div class="row">
+          <button class="btn primary" id="signupBtn" type="button" style="flex:1;">Create account</button>
+        </div>
+
+        <div class="row mt-md" style="justify-content:center;">
+          <a href="login.html" class="small">Already have an account? Sign in</a>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:16px;font-size:12px;">
+        <a href="../legal/terms.html" class="text-muted">Terms</a>
+        <span class="text-muted" style="opacity:0.3;margin:0 6px;">·</span>
+        <a href="../legal/privacy.html" class="text-muted">Privacy</a>
+        <span class="text-muted" style="opacity:0.3;margin:0 6px;">·</span>
+        <a href="../legal/disclaimer.html" class="text-muted">Disclaimer</a>
+      </div>
+    </div>
+  </main>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  const btn = document.getElementById("signupBtn");
+  const notice = document.getElementById("authNotice");
+
+  btn.addEventListener("click", async ()=>{
+    notice.innerHTML = "";
+    try{
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      if(!email) throw new Error("Email is required.");
+      if(!password || password.length < 8) throw new Error("Password must be at least 8 characters.");
+
+      const res = await apiPublic(`/v1/auth/signup`, { method:"POST", body: JSON.stringify({ email, password }) });
+      localStorage.setItem("coris_csrf", res.csrf);
+      location.href = "onboarding.html";
+    }catch(err){
+      showError(notice, err);
+    }
+  });
+});
+</script>
+
+</body>
+</html>

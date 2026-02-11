@@ -1,0 +1,60 @@
+# ── CORIS Docker Compose ──────────
+# Usage:
+#   cp .env.example .env   (fill in values)
+#   docker compose up -d
+#   docker compose exec db psql -U coris -d coris -f /migrations/000-full-schema.sql
+
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coris
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-coris_secret}
+      POSTGRES_DB: coris
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coris"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── CORIS API ──
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://coris:${DB_PASSWORD:-coris_secret}@db:5432/coris
+      NODE_ENV: production
+
+  # ── Due-today email worker (runs once daily via cron or manual) ──
+  # Uncomment to run on demand:
+  # worker:
+  #   build:
+  #     context: ..
+  #     dockerfile: deploy/Dockerfile.api
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   env_file: .env
+  #   environment:
+  #     DATABASE_URL: postgres://coris:${DB_PASSWORD:-coris_secret}@db:5432/coris
+  #   command: ["node", "--enable-source-maps", "dist/worker/dueTodayEmail.js"]
+
+volumes:
+  pgdata:

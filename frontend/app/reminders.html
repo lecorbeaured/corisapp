@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Reminders</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Reminders</h1>
+  <p class="sub">Email reminders for upcoming bills. Generate them here, and the daily worker sends them.</p>
+</div>
+
+<div id="remNotice"></div>
+
+<div class="grid two">
+  <div class="card">
+    <h2 class="card-title">Actions</h2>
+    <p class="small mb-md" style="line-height:1.5;">Generate reminder events for your upcoming bills. Running this multiple times is safe — it won't create duplicates.</p>
+    <div class="row" style="gap:8px;">
+      <button class="btn primary" id="genBtn">Generate reminders</button>
+      <button class="btn" id="refreshRem">Refresh</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Pending</h2>
+    <div id="pending"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+</div>
+
+<div class="card mt-md">
+  <h2 class="card-title">Upcoming (next 30 days)</h2>
+  <div id="upcoming"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+</div>
+
+<script>
+function formatDateTime(isoStr){
+  try{
+    const d = new Date(isoStr);
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" }) + " at " +
+      d.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+  }catch{ return isoStr || "—"; }
+}
+
+async function loadReminders(){
+  const notice = document.getElementById("remNotice");
+  const pending = document.getElementById("pending");
+  const upcoming = document.getElementById("upcoming");
+  notice.innerHTML = "";
+  pending.innerHTML = spinnerHtml("Loading…");
+  upcoming.innerHTML = spinnerHtml("Loading…");
+
+  try{
+    if(!requireLogin()) return;
+
+    const [p, u] = await Promise.all([
+      api(`/v1/reminders/pending`, { method:"GET" }),
+      api(`/v1/reminders/upcoming`, { method:"GET" }),
+    ]);
+
+    pending.innerHTML = p.length ? `
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Type</th><th>Scheduled</th><th>Bill</th></tr></thead>
+        <tbody>${p.map(x => `
+          <tr>
+            <td><span class="badge warn">${escapeHtml(x.reminder_type)}</span></td>
+            <td class="small">${formatDateTime(x.scheduled_send_at_utc)}</td>
+            <td class="small" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(x.occurrence_id)}</td>
+          </tr>
+        `).join("")}</tbody>
+      </table></div>
+    ` : '<div class="small" style="color:var(--muted);padding:4px 0;">No pending reminders. All caught up.</div>';
+
+    upcoming.innerHTML = u.length ? `
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Type</th><th>Scheduled</th><th>Status</th></tr></thead>
+        <tbody>${u.map(x => `
+          <tr>
+            <td><span class="badge">${escapeHtml(x.reminder_type)}</span></td>
+            <td class="small">${formatDateTime(x.scheduled_send_at_utc)}</td>
+            <td>${x.canceled_at
+              ? '<span class="badge bad">Canceled</span>'
+              : '<span class="badge ok">Scheduled</span>'
+            }</td>
+          </tr>
+        `).join("")}</tbody>
+      </table></div>
+    ` : '<div class="small" style="color:var(--muted);padding:4px 0;">No upcoming reminders in the next 30 days.</div>';
+
+  }catch(err){
+    showError(notice, err);
+    pending.textContent = "";
+    upcoming.textContent = "";
+  }
+}
+
+async function generate(){
+  const notice = document.getElementById("remNotice");
+  try{
+    if(!requireLogin()) return;
+    await api(`/v1/reminders/generate`, { method:"POST" });
+    toast("Reminders generated.", "ok");
+    await loadReminders();
+  }catch(err){
+    showError(notice, err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("genBtn").addEventListener("click", generate);
+  document.getElementById("refreshRem").addEventListener("click", loadReminders);
+  loadReminders();
+});
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 CORIS. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>

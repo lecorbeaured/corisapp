@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Bills</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <style>
+    .bills-toolbar{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .bills-filter{
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .filter-btn{
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover{ border-color: var(--muted); color: var(--text); }
+    .filter-btn.active{
+      background: var(--accent-dim);
+      border-color: var(--accent-border);
+      color: var(--accent-text);
+    }
+    .bills-count{
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Bills</h1>
+  <p class="sub">Your bill occurrences — mark them paid or adjust variable amounts.</p>
+</div>
+
+<div id="billsNotice"></div>
+
+<div class="card">
+  <div class="bills-toolbar">
+    <div class="bills-filter">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+      <button class="filter-btn" data-filter="due">Due today</button>
+      <button class="filter-btn" data-filter="overdue">Overdue</button>
+      <button class="filter-btn" data-filter="paid">Paid</button>
+    </div>
+    <div class="row" style="gap:8px;">
+      <span class="bills-count" id="billsCount"></span>
+      <button class="btn btn-sm" id="refreshBtn">Refresh</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+  <table class="table" id="billsTable" aria-label="Bills table">
+    <thead>
+      <tr>
+        <th>Bill</th>
+        <th>Due</th>
+        <th>Status</th>
+        <th>Amount</th>
+        <th>Paid</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="billsTbody">
+      <tr><td colspan="6"><span class="spinner-text"><span class="spinner"></span> Loading…</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+let allBills = [];
+let activeFilter = "all";
+
+function formatDate(dateStr){
+  try{
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  }catch{ return dateStr; }
+}
+
+function renderBills(){
+  const tbody = document.getElementById("billsTbody");
+  const filtered = activeFilter === "all"
+    ? allBills
+    : allBills.filter(o => o.computed_status === activeFilter);
+
+  document.getElementById("billsCount").textContent = `${filtered.length} bill${filtered.length !== 1 ? "s" : ""}`;
+
+  if(!filtered.length){
+    tbody.innerHTML = `<tr><td colspan="6" class="small" style="text-align:center;padding:24px;">No bills match this filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(o => {
+    const status = o.computed_status || "upcoming";
+    const badgeClass = status === "paid" ? "ok" : (status === "overdue" ? "bad" : (status === "due" ? "warn" : ""));
+    const paid = o.paid_date ? formatDate(o.paid_date.split("T")[0]) : "—";
+    const isPaid = status === "paid";
+    return `
+      <tr>
+        <td>
+          <div><strong>${escapeHtml(o.bill_name || "")}</strong></div>
+          <div class="small">${escapeHtml(o.category || "")}</div>
+        </td>
+        <td class="small">${formatDate(o.due_date)}</td>
+        <td><span class="badge ${badgeClass}">${escapeHtml(status)}</span></td>
+        <td>$${money(o.amount)}</td>
+        <td class="small">${escapeHtml(paid)}</td>
+        <td>
+          ${isPaid ? '' : `
+          <div class="row" style="gap:6px;">
+            <button class="btn btn-sm primary" onclick="markPaid('${o.id}', ${Number(o.amount||0)})">Pay</button>
+            <button class="btn btn-sm" onclick="editAmount('${o.id}', ${Number(o.amount||0)})">Edit</button>
+          </div>
+          `}
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function loadBills(){
+  const notice = document.getElementById("billsNotice");
+  const tbody = document.getElementById("billsTbody");
+  notice.innerHTML = "";
+  tbody.innerHTML = `<tr><td colspan="6">${spinnerHtml("Loading bills…")}</td></tr>`;
+
+  try{
+    if(!requireLogin()) return;
+    allBills = await api(`/v1/occurrences/me`, { method:"GET" });
+    renderBills();
+  }catch(err){
+    showError(notice, err);
+    tbody.innerHTML = "";
+  }
+}
+
+async function markPaid(id, currentAmount){
+  openModal({
+    title: "Mark as paid",
+    fields: [
+      { key: "amount_paid", label: "Amount paid (blank = full amount)", type: "number", value: currentAmount, placeholder: "0.00" }
+    ],
+    submitLabel: "Mark paid",
+    submitClass: "primary",
+    onSubmit: async (values) => {
+      const body = {};
+      if(values.amount_paid && !isNaN(Number(values.amount_paid))) body.amount_paid = Number(values.amount_paid);
+      await api(`/v1/occurrences/${id}/paid`, { method:"POST", body: JSON.stringify(body) });
+      toast("Marked as paid.", "ok");
+      await loadBills();
+    }
+  });
+}
+
+async function editAmount(id, current){
+  openModal({
+    title: "Edit amount",
+    fields: [
+      { key: "amount", label: "New amount (variable bills only)", type: "number", value: current, placeholder: "0.00", required: true }
+    ],
+    submitLabel: "Update",
+    onSubmit: async (values) => {
+      const amt = Number(values.amount);
+      if(isNaN(amt) || amt <= 0) throw new Error("Enter a valid positive number.");
+      await api(`/v1/occurrences/${id}/amount`, { method:"PATCH", body: JSON.stringify({ amount: amt }) });
+      toast("Amount updated.", "ok");
+      await loadBills();
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("refreshBtn").addEventListener("click", loadBills);
+
+  // Filter buttons
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeFilter = btn.dataset.filter;
+      renderBills();
+    });
+  });
+
+  loadBills();
+});
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 CORIS. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>

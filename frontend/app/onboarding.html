@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Get Started</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <style>
+    /* Onboarding-specific styles */
+    .onb-wrap{
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    /* Progress bar */
+    .onb-progress{
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+    .onb-step-dot{
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      transition: all 0.25s ease;
+    }
+    .onb-step-dot.active{
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent-text);
+    }
+    .onb-step-dot.done{
+      border-color: var(--accent);
+      background: var(--accent-solid);
+      color: #fff;
+    }
+    .onb-step-line{
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      transition: background 0.25s ease;
+    }
+    .onb-step-line.done{
+      background: var(--accent);
+    }
+
+    /* Step panels */
+    .onb-panel{
+      display: none;
+    }
+    .onb-panel.active{
+      display: block;
+      animation: fadeUp 0.3s ease-out;
+    }
+    @keyframes fadeUp{
+      from{ opacity: 0; transform: translateY(12px); }
+      to{ opacity: 1; transform: translateY(0); }
+    }
+
+    /* Welcome step */
+    .onb-welcome{
+      text-align: center;
+      padding: 8px 0 12px;
+    }
+    .onb-welcome-icon{
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: var(--accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+    }
+    .onb-welcome h2{
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      letter-spacing: -0.3px;
+    }
+    .onb-welcome p{
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 24px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Checklist on review step */
+    .onb-check{
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .onb-check:last-child{ border-bottom: none; }
+    .onb-check-icon{
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .onb-check-icon.ok{
+      background: var(--accent-dim);
+      color: var(--accent-text);
+    }
+    .onb-check-icon.pending{
+      background: var(--warning-dim);
+      color: var(--warning);
+    }
+    .onb-check-body strong{
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    .onb-check-body .small{
+      line-height: 1.4;
+    }
+
+    /* Nav buttons */
+    .onb-nav{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      gap: 12px;
+    }
+    .onb-nav .btn{ min-width: 120px; }
+  </style>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <div class="onb-wrap">
+
+        <!-- Progress -->
+        <div class="onb-progress" id="progress">
+          <div class="onb-step-dot active" data-step="0">1</div>
+          <div class="onb-step-line"></div>
+          <div class="onb-step-dot" data-step="1">2</div>
+          <div class="onb-step-line"></div>
+          <div class="onb-step-dot" data-step="2">3</div>
+          <div class="onb-step-line"></div>
+          <div class="onb-step-dot" data-step="3">4</div>
+        </div>
+
+        <div id="onbNotice"></div>
+
+        <!-- ════ STEP 0: Welcome ════ -->
+        <div class="onb-panel active" data-panel="0">
+          <div class="card">
+            <div class="onb-welcome">
+              <div class="onb-welcome-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h2>Welcome to CORIS</h2>
+              <p>Let's get your bills organized in three quick steps. You'll set your pay schedule, create your first bill template, and see everything come together.</p>
+              <button class="btn primary btn-lg" onclick="goStep(1)">Let's get started</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════ STEP 1: Pay Schedule ════ -->
+        <div class="onb-panel" data-panel="1">
+          <div class="card">
+            <h2 class="card-title">Step 1 · Pay Schedule</h2>
+            <p class="small mb-md" style="line-height:1.5;">Tell us when you get paid so we can plan bills around your paychecks.</p>
+
+            <div class="field">
+              <label class="label" for="obFrequency">How often are you paid?</label>
+              <select id="obFrequency" class="input" style="width:100%;">
+                <option value="weekly">Weekly</option>
+                <option value="biweekly" selected>Every two weeks</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="label" for="obNextDate">When is your next paycheck?</label>
+              <input class="input" id="obNextDate" type="date" style="width:100%;"/>
+            </div>
+
+            <div class="field">
+              <label class="label" for="obNetPay">Typical take-home pay <span style="opacity:0.5;">(optional)</span></label>
+              <input class="input" id="obNetPay" type="number" step="0.01" placeholder="0.00" style="width:100%;"/>
+            </div>
+
+            <div class="onb-nav">
+              <button class="btn" onclick="goStep(0)">Back</button>
+              <button class="btn primary" id="saveSchBtn">Save & continue</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════ STEP 2: First Template ════ -->
+        <div class="onb-panel" data-panel="2">
+          <div class="card">
+            <h2 class="card-title">Step 2 · Your First Bill</h2>
+            <p class="small mb-md" style="line-height:1.5;">Add a recurring bill — like rent, a phone bill, or a subscription. You can always add more later.</p>
+
+            <div class="field">
+              <label class="label" for="obBillName">Bill name</label>
+              <input class="input" id="obBillName" placeholder="e.g. Rent, Netflix, Electric" style="width:100%;"/>
+            </div>
+
+            <div class="grid two" style="gap:12px;">
+              <div class="field">
+                <label class="label" for="obBillFreq">Frequency</label>
+                <select id="obBillFreq" class="input" style="width:100%;">
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Biweekly</option>
+                  <option value="monthly" selected>Monthly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="label" for="obBillDay">Due day (1–31)</label>
+                <input class="input" id="obBillDay" type="number" min="1" max="31" value="1" style="width:100%;"/>
+              </div>
+            </div>
+
+            <div class="grid two" style="gap:12px;">
+              <div class="field">
+                <label class="label" for="obBillAmt">Amount</label>
+                <input class="input" id="obBillAmt" type="number" step="0.01" placeholder="0.00" style="width:100%;"/>
+              </div>
+              <div class="field">
+                <label class="label" for="obBillCat">Category</label>
+                <input class="input" id="obBillCat" placeholder="e.g. Housing" style="width:100%;"/>
+              </div>
+            </div>
+
+            <div class="onb-nav">
+              <button class="btn" onclick="goStep(1)">Back</button>
+              <button class="btn primary" id="saveTplBtn">Create bill & continue</button>
+            </div>
+
+            <p class="small mt-md" style="text-align:center;">
+              <a href="#" onclick="goStep(3); return false;" style="color:var(--muted);">Skip — I'll add bills later</a>
+            </p>
+          </div>
+        </div>
+
+        <!-- ════ STEP 3: Review ════ -->
+        <div class="onb-panel" data-panel="3">
+          <div class="card">
+            <h2 class="card-title">Step 3 · You're all set</h2>
+            <p class="small mb-md" style="line-height:1.5;">Here's a quick summary. You can always change these from the main app.</p>
+
+            <div id="reviewChecklist">
+              <div style="text-align:center;padding:20px 0;"><span class="spinner-text"><span class="spinner"></span> Loading status…</span></div>
+            </div>
+
+            <div class="onb-nav" style="justify-content:center;margin-top:28px;">
+              <a class="btn primary btn-lg" href="dashboard.html">Go to Dashboard</a>
+            </div>
+
+            <p class="small mt-md" style="text-align:center;line-height:1.5;">
+              Need to add more bills? Head to <a href="templates.html">Templates</a>.<br/>
+              Want to adjust your pay dates? Visit <a href="schedule.html">Pay Schedule</a>.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+<script>
+let currentStep = 0;
+
+function goStep(n){
+  currentStep = n;
+
+  // Update panels
+  document.querySelectorAll(".onb-panel").forEach(p => p.classList.remove("active"));
+  const panel = document.querySelector(`[data-panel="${n}"]`);
+  if(panel) panel.classList.add("active");
+
+  // Update progress dots and lines
+  const dots = document.querySelectorAll(".onb-step-dot");
+  const lines = document.querySelectorAll(".onb-step-line");
+  dots.forEach((d, i) => {
+    d.classList.remove("active", "done");
+    if(i < n) d.classList.add("done");
+    else if(i === n) d.classList.add("active");
+    // Replace number with checkmark for done steps
+    if(i < n) d.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/></svg>';
+    else d.textContent = String(i + 1);
+  });
+  lines.forEach((l, i) => {
+    l.classList.toggle("done", i < n);
+  });
+
+  // Clear notices
+  document.getElementById("onbNotice").innerHTML = "";
+
+  // Load review if on step 3
+  if(n === 3) loadReview();
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ── Step 1: Save Schedule ──
+async function saveSchedule(){
+  const notice = document.getElementById("onbNotice");
+  notice.innerHTML = "";
+
+  try{
+    if(!requireLogin()) return;
+
+    const frequency = document.getElementById("obFrequency").value;
+    const dateVal = document.getElementById("obNextDate").value;
+    const netPay = document.getElementById("obNetPay").value.trim();
+
+    if(!dateVal) throw new Error("Please select your next paycheck date.");
+
+    // Format date
+    const next_paycheck_date = dateVal;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(next_paycheck_date)){
+      throw new Error("Date must be in YYYY-MM-DD format.");
+    }
+
+    const body = { frequency, next_paycheck_date };
+    if(netPay && !isNaN(Number(netPay)) && Number(netPay) > 0){
+      body.typical_net_pay = Number(netPay);
+    }
+
+    const btn = document.getElementById("saveSchBtn");
+    btnLoading(btn, true);
+    await api(`/v1/schedule/set`, { method:"POST", body: JSON.stringify(body) });
+    btnLoading(btn, false);
+
+    toast("Pay schedule saved!", "ok");
+    goStep(2);
+  }catch(err){
+    btnLoading(document.getElementById("saveSchBtn"), false);
+    notice.innerHTML = `<div class="notice bad"><strong>${escapeHtml(err.message || String(err))}</strong></div>`;
+  }
+}
+
+// ── Step 2: Create Template ──
+async function createFirstTemplate(){
+  const notice = document.getElementById("onbNotice");
+  notice.innerHTML = "";
+
+  try{
+    if(!requireLogin()) return;
+
+    const bill_name = document.getElementById("obBillName").value.trim();
+    const frequency = document.getElementById("obBillFreq").value;
+    const due_day = Number(document.getElementById("obBillDay").value);
+    const default_amount = Number(document.getElementById("obBillAmt").value);
+    const category = document.getElementById("obBillCat").value.trim();
+
+    if(!bill_name) throw new Error("Bill name is required.");
+    if(!Number.isInteger(due_day) || due_day < 1 || due_day > 31) throw new Error("Due day must be 1 to 31.");
+    if(isNaN(default_amount) || default_amount < 0) throw new Error("Amount must be 0 or more.");
+
+    const body = { bill_name, frequency, due_day, default_amount, category, is_variable: false, notes: "" };
+
+    const btn = document.getElementById("saveTplBtn");
+    btnLoading(btn, true);
+    await api(`/v1/templates`, { method:"POST", body: JSON.stringify(body) });
+    btnLoading(btn, false);
+
+    toast("Bill template created!", "ok");
+    goStep(3);
+  }catch(err){
+    btnLoading(document.getElementById("saveTplBtn"), false);
+    notice.innerHTML = `<div class="notice bad"><strong>${escapeHtml(err.message || String(err))}</strong></div>`;
+  }
+}
+
+// ── Step 3: Load review status ──
+async function loadReview(){
+  const out = document.getElementById("reviewChecklist");
+
+  try{
+    if(!requireLogin()) return;
+
+    const sch = await api(`/v1/schedule/me`, { method:"GET" }).catch(() => null);
+    const tpls = await api(`/v1/templates/me`, { method:"GET" }).catch(() => []);
+    const integrity = await api(`/v1/planning/integrity`, { method:"GET" }).catch(() => null);
+
+    const hasSchedule = !!(sch && sch.id);
+    const tplCount = Array.isArray(tpls) ? tpls.filter(t => t.is_active).length : 0;
+    const planningOk = integrity ? integrity.unassigned.length === 0 : false;
+
+    out.innerHTML = `
+      <div class="onb-check">
+        <div class="onb-check-icon ${hasSchedule ? "ok" : "pending"}">${hasSchedule ? "✓" : "!"}</div>
+        <div class="onb-check-body">
+          <strong>Pay schedule</strong>
+          <div class="small">${hasSchedule
+            ? `${escapeHtml(sch.frequency)}, next paycheck ${escapeHtml(sch.next_paycheck_date)}${sch.typical_net_pay ? " · $" + money(sch.typical_net_pay) : ""}`
+            : "Not set yet — <a href='schedule.html'>set it now</a>"
+          }</div>
+        </div>
+      </div>
+
+      <div class="onb-check">
+        <div class="onb-check-icon ${tplCount > 0 ? "ok" : "pending"}">${tplCount > 0 ? "✓" : "!"}</div>
+        <div class="onb-check-body">
+          <strong>Bill templates</strong>
+          <div class="small">${tplCount > 0
+            ? `${tplCount} active template${tplCount > 1 ? "s" : ""}`
+            : "None yet — <a href='templates.html'>create one</a>"
+          }</div>
+        </div>
+      </div>
+
+      <div class="onb-check">
+        <div class="onb-check-icon ${planningOk ? "ok" : "pending"}">${planningOk ? "✓" : "!"}</div>
+        <div class="onb-check-body">
+          <strong>Planning</strong>
+          <div class="small">${planningOk
+            ? "All bills assigned to paycheck windows"
+            : "Some bills may not be assigned yet — this is normal if you just started"
+          }</div>
+        </div>
+      </div>
+    `;
+  }catch(err){
+    out.innerHTML = `<div class="notice bad"><strong>Could not load status</strong><div class="small">${escapeHtml(err.message || String(err))}</div></div>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("saveSchBtn").addEventListener("click", saveSchedule);
+  document.getElementById("saveTplBtn").addEventListener("click", createFirstTemplate);
+
+  // Set default date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById("obNextDate").value = tomorrow.toISOString().split("T")[0];
+});
+</script>
+</body>
+</html>

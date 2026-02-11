@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS — Contact Us</title>
+  <meta name="description" content="Get in touch with the CORIS team. Questions, feedback, or support requests — we'd love to hear from you."/>
+  <link rel="icon" href="favicon.ico"/>
+  <link rel="apple-touch-icon" href="assets/favicon.png"/>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <link rel="stylesheet" href="css/landing.css"/>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="index.html">
+        <img src="assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <a class="btn" href="app/login.html">Sign in</a>
+        <a class="btn primary" href="app/signup.html">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-layout">
+    <div style="width:100%;max-width:520px;">
+      <div class="card accent-top">
+        <h1 class="h1" style="text-align:center;">Get in touch</h1>
+        <p class="sub" style="text-align:center;">Questions, feedback, or support — we'd love to hear from you.</p>
+
+        <div id="contactNotice"></div>
+
+        <!-- Netlify Forms: data-netlify + honeypot for spam -->
+        <form id="contactForm" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <p style="display:none;">
+            <label>Don't fill this out: <input name="bot-field"/></label>
+          </p>
+          <input type="hidden" name="form-name" value="contact"/>
+
+          <div class="field">
+            <label class="label" for="contactName">Your name</label>
+            <input class="input" id="contactName" name="name" type="text" placeholder="Jane Doe" required/>
+          </div>
+
+          <div class="field">
+            <label class="label" for="contactEmail">Email address</label>
+            <input class="input" id="contactEmail" name="email" type="email" placeholder="you@example.com" required/>
+          </div>
+
+          <div class="field">
+            <label class="label" for="contactSubject">Subject</label>
+            <select class="input" id="contactSubject" name="subject">
+              <option value="general">General question</option>
+              <option value="feedback">Feedback</option>
+              <option value="bug">Bug report</option>
+              <option value="support">Account support</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label" for="contactMessage">Message</label>
+            <textarea class="input" id="contactMessage" name="message" rows="5" placeholder="Tell us what's on your mind…" style="resize:vertical;min-height:120px;" required minlength="10"></textarea>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" id="contactBtn" type="submit" style="flex:1;">Send message</button>
+          </div>
+        </form>
+
+        <div id="contactSuccess" style="display:none;text-align:center;padding:24px 0;">
+          <div style="font-size:32px;margin-bottom:12px;">✓</div>
+          <h2 style="font-size:18px;font-weight:700;margin:0 0 8px;">Message sent</h2>
+          <p class="small" style="margin:0 0 20px;">Thanks for reaching out. We'll get back to you as soon as we can.</p>
+          <a class="btn" href="index.html">Back to home</a>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:16px;font-size:12px;">
+        <a href="legal/terms.html" class="text-muted">Terms</a>
+        <span class="text-muted" style="opacity:0.3;margin:0 6px;">·</span>
+        <a href="legal/privacy.html" class="text-muted">Privacy</a>
+        <span class="text-muted" style="opacity:0.3;margin:0 6px;">·</span>
+        <a href="legal/disclaimer.html" class="text-muted">Disclaimer</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 CORIS. All rights reserved.</div>
+  </footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  const form = document.getElementById("contactForm");
+  const notice = document.getElementById("contactNotice");
+  const success = document.getElementById("contactSuccess");
+  const btn = document.getElementById("contactBtn");
+
+  form.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    notice.innerHTML = "";
+
+    const name = document.getElementById("contactName").value.trim();
+    const email = document.getElementById("contactEmail").value.trim();
+    const message = document.getElementById("contactMessage").value.trim();
+
+    if(!name || !email || !message || message.length < 10){
+      notice.innerHTML = '<div class="notice bad"><strong>Please fill in all fields (message must be at least 10 characters).</strong></div>';
+      return;
+    }
+
+    btn.classList.add("loading");
+    btn.disabled = true;
+
+    try{
+      const formData = new FormData(form);
+      const res = await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(formData).toString(),
+      });
+
+      if(!res.ok) throw new Error("Submission failed");
+
+      form.style.display = "none";
+      success.style.display = "block";
+    }catch(err){
+      notice.innerHTML = '<div class="notice bad"><strong>Something went wrong. Please try again or email us directly.</strong></div>';
+      btn.classList.remove("loading");
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+
+</body>
+</html>

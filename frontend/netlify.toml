@@ -1,0 +1,39 @@
+[build]
+  publish = "."
+
+# Redirect /v1/* API calls to your backend
+# Replace YOUR_API_URL with your actual API domain (e.g. https://api.coris.app)
+[[redirects]]
+  from = "/v1/*"
+  to = "https://coris-api-production.up.railway.app/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "https://coris-api-production.up.railway.app/health"
+  status = 200
+  force = true
+
+# Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, immutable"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, immutable"

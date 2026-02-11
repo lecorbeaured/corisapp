@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Settings</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Settings</h1>
+  <p class="sub">Connection and account configuration.</p>
+</div>
+
+<div id="setNotice"></div>
+
+<div class="grid two">
+  <div class="card">
+    <h2 class="card-title">API Connection</h2>
+
+    <div class="field">
+      <label class="label" for="apiBase">API Base URL</label>
+      <input class="input" id="apiBase" placeholder="http://localhost:3000" style="width:100%;"/>
+    </div>
+
+    <div class="row" style="gap:8px;">
+      <button class="btn primary" id="saveBtn">Save</button>
+      <button class="btn" id="testBtn">Test connection</button>
+    </div>
+
+    <p class="small mt-sm" style="line-height:1.5;">In production this is typically set once and doesn't need changing.</p>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Account Status</h2>
+    <div id="authStatus" class="notice">
+      <strong>Checking…</strong>
+      <div class="small">Verifying login status.</div>
+    </div>
+
+    <div class="mt-md">
+      <h2 class="card-title" style="margin-bottom:8px;">Quick Links</h2>
+      <div class="row" style="gap:8px;flex-wrap:wrap;">
+        <a class="btn btn-sm" href="schedule.html">Pay Schedule</a>
+        <a class="btn btn-sm" href="templates.html">Templates</a>
+        <a class="btn btn-sm" href="planning.html">Planning</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function load(){
+  const cfg = getCfg();
+  document.getElementById("apiBase").value = cfg.apiBase;
+}
+
+function save(){
+  localStorage.setItem("coris_api_base", document.getElementById("apiBase").value.trim());
+}
+
+async function testApi(){
+  const notice = document.getElementById("setNotice");
+  notice.innerHTML = "";
+  try{
+    save();
+    await apiPublic(`/health`, { method:"GET" });
+    toast("API is reachable.", "ok");
+  }catch(err){
+    showError(notice, err);
+  }
+}
+
+async function refreshAuthStatus(){
+  const el = document.getElementById("authStatus");
+  const cfg = getCfg();
+  if(!cfg.csrf){
+    el.className = "notice warn";
+    el.innerHTML = '<strong>Not logged in</strong><div class="small">Go to <a href="login.html">Login</a> to sign in.</div>';
+    return;
+  }
+  try{
+    const me = await api(`/v1/auth/me`, { method:"GET" });
+    el.className = "notice ok";
+    el.innerHTML = '<strong>Logged in</strong><div class="small">Session is active.</div>';
+  }catch(err){
+    el.className = "notice bad";
+    el.innerHTML = '<strong>Session expired</strong><div class="small"><a href="login.html">Log in again</a></div>';
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  load();
+  refreshAuthStatus();
+
+  document.getElementById("saveBtn").addEventListener("click", ()=>{
+    save();
+    toast("Settings saved.", "ok");
+  });
+
+  document.getElementById("testBtn").addEventListener("click", testApi);
+});
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 CORIS. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>

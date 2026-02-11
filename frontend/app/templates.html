@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Templates</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Templates</h1>
+  <p class="sub">Recurring bill definitions. Changes apply to future occurrences only.</p>
+</div>
+
+<div id="tplNotice"></div>
+
+<div class="grid two">
+  <div class="card">
+    <h2 class="card-title">New Template</h2>
+
+    <div class="field">
+      <label class="label" for="name">Bill name</label>
+      <input class="input" id="name" placeholder="e.g. Rent, Netflix, Electric" style="width:100%;"/>
+    </div>
+
+    <div class="grid two" style="gap:12px;">
+      <div class="field">
+        <label class="label" for="frequency">Frequency</label>
+        <select id="frequency" class="input" style="width:100%;">
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Biweekly</option>
+          <option value="monthly" selected>Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="due_day">Due day (1–31)</label>
+        <input class="input" id="due_day" type="number" min="1" max="31" value="1" style="width:100%;"/>
+      </div>
+    </div>
+
+    <div class="grid two" style="gap:12px;">
+      <div class="field">
+        <label class="label" for="amount">Amount</label>
+        <input class="input" id="amount" type="number" step="0.01" placeholder="0.00" style="width:100%;"/>
+      </div>
+      <div class="field">
+        <label class="label" for="category">Category</label>
+        <input class="input" id="category" placeholder="e.g. Housing" style="width:100%;"/>
+      </div>
+    </div>
+
+    <div class="grid two" style="gap:12px;">
+      <div class="field">
+        <label class="label" for="is_variable">Variable amount?</label>
+        <select id="is_variable" class="input" style="width:100%;">
+          <option value="false" selected>No — fixed amount</option>
+          <option value="true">Yes — amount varies</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="notes">Notes <span style="opacity:0.5;">(optional)</span></label>
+        <input class="input" id="notes" placeholder="Any notes" style="width:100%;"/>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:4px;">
+      <button class="btn primary" id="createBtn" type="button">Create template</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h2 class="card-title" style="margin:0;">Your Templates</h2>
+      <button class="btn btn-sm" id="refreshBtn" type="button">Refresh</button>
+    </div>
+    <div id="tplList"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+</div>
+
+<script>
+function tplRow(t){
+  const active = t.is_active ? '<span class="badge ok">Active</span>' : '<span class="badge bad">Inactive</span>';
+  const variable = t.is_variable ? '<span class="badge warn" style="font-size:10px;">Variable</span>' : '';
+  return `
+    <tr data-tpl-id="${t.id}" data-name="${escapeHtml(t.bill_name || t.name || "")}" data-amount="${Number(t.default_amount || t.typical_amount || 0)}" data-notes="${escapeHtml(t.notes || "")}">
+      <td>
+        <strong>${escapeHtml(t.bill_name || t.name || "")}</strong>
+        <div class="small">${escapeHtml(t.category || "—")} ${variable}</div>
+      </td>
+      <td class="small">${escapeHtml(t.frequency)}</td>
+      <td class="small">${escapeHtml(String(t.due_day))}</td>
+      <td class="small">$${money(t.default_amount || t.typical_amount)}</td>
+      <td>${active}</td>
+      <td>
+        <div class="row" style="gap:6px;">
+          <button class="btn btn-sm" onclick="editTpl('${t.id}')">Edit</button>
+          ${t.is_active ? `<button class="btn btn-sm danger" onclick="deactivateTpl('${t.id}')">Deactivate</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+async function loadTemplates(){
+  const notice = document.getElementById("tplNotice");
+  const out = document.getElementById("tplList");
+  notice.innerHTML = "";
+  out.innerHTML = spinnerHtml("Loading templates…");
+  try{
+    if(!requireLogin()) return;
+    const rows = await api(`/v1/templates/me`, { method:"GET" });
+    if(!rows.length){
+      out.innerHTML = '<div class="empty-state"><img src="../assets/empty-state.svg" alt=""/><p>No templates yet. Create your first one to start tracking bills.</p></div>';
+      return;
+    }
+    out.innerHTML = `
+      <div class="table-wrap"><table class="table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Frequency</th><th>Due day</th><th>Amount</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(tplRow).join("")}
+        </tbody>
+      </table></div>
+    `;
+  }catch(err){
+    showError(notice, err);
+    out.textContent = "";
+  }
+}
+
+async function createTpl(){
+  const notice = document.getElementById("tplNotice");
+  notice.innerHTML = "";
+  try{
+    if(!requireLogin()) return;
+
+    const body = {
+      bill_name: document.getElementById("name").value.trim(),
+      frequency: document.getElementById("frequency").value,
+      due_day: Number(document.getElementById("due_day").value),
+      default_amount: Number(document.getElementById("amount").value),
+      category: document.getElementById("category").value.trim(),
+      is_variable: document.getElementById("is_variable").value === "true",
+      notes: document.getElementById("notes").value.trim()
+    };
+
+    if(!body.bill_name) throw new Error("Bill name is required.");
+    if(!Number.isInteger(body.due_day) || body.due_day < 1 || body.due_day > 31) throw new Error("Due day must be 1 to 31.");
+    if(isNaN(body.default_amount) || body.default_amount < 0) throw new Error("Amount must be 0 or more.");
+
+    await api(`/v1/templates`, { method:"POST", body: JSON.stringify(body) });
+    toast("Template created. Occurrences generated.", "ok");
+
+    // Clear form
+    document.getElementById("name").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("category").value = "";
+    document.getElementById("notes").value = "";
+
+    await loadTemplates();
+  }catch(err){
+    showError(notice, err);
+  }
+}
+
+async function editTpl(id){
+  const row = document.querySelector(`[data-tpl-id="${id}"]`);
+  const currentName = row ? row.getAttribute("data-name") : "";
+  const currentAmount = row ? row.getAttribute("data-amount") : "0";
+  const currentNotes = row ? row.getAttribute("data-notes") : "";
+
+  openModal({
+    title: "Edit template",
+    fields: [
+      { key: "bill_name", label: "Name", value: currentName, placeholder: "Bill name" },
+      { key: "default_amount", label: "Typical amount", type: "number", value: currentAmount, placeholder: "0.00" },
+      { key: "notes", label: "Notes", value: currentNotes, placeholder: "Optional" }
+    ],
+    submitLabel: "Save changes",
+    onSubmit: async (values) => {
+      const patch = {};
+      if(values.bill_name && values.bill_name.trim()) patch.bill_name = values.bill_name.trim();
+      if(values.default_amount && !isNaN(Number(values.default_amount))) patch.default_amount = Number(values.default_amount);
+      if(values.notes !== undefined) patch.notes = values.notes.trim();
+      if(Object.keys(patch).length === 0) return;
+
+      await api(`/v1/templates/${id}`, { method:"PATCH", body: JSON.stringify(patch) });
+      toast("Template updated (future occurrences only).", "ok");
+      await loadTemplates();
+    }
+  });
+}
+
+async function deactivateTpl(id){
+  const yes = await confirmDialog(
+    "Deactivate this template? No new occurrences will be generated, but existing history stays.",
+    { title: "Deactivate template", confirmLabel: "Deactivate", confirmClass: "danger" }
+  );
+  if(!yes) return;
+
+  try{
+    await api(`/v1/templates/${id}/deactivate`, { method:"POST" });
+    toast("Template deactivated.", "ok");
+    await loadTemplates();
+  }catch(err){
+    toast(err.message || String(err), "bad");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("createBtn").addEventListener("click", createTpl);
+  document.getElementById("refreshBtn").addEventListener("click", loadTemplates);
+  loadTemplates();
+});
+</script>
+</body>
+</html>

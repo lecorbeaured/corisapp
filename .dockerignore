@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.env
+*.md
+tests
+docs
+frontend
+deploy
+FREEZE-V1.md

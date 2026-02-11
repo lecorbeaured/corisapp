@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Planning</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <style>
+    .window-card{
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .window-card:hover{ border-color: var(--muted); background: var(--bg-subtle); }
+    .window-card.active{
+      border-color: var(--accent-border);
+      background: var(--accent-dim);
+    }
+    .window-card + .window-card{ margin-top: 8px; }
+    .wc-dates{
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .wc-meta{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .wc-amounts{
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .wc-total{
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .wc-unpaid{
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Paycheck Planning</h1>
+  <p class="sub">Bills assigned to paycheck windows based on your schedule.</p>
+</div>
+
+<div id="planNotice"></div>
+
+<div class="row mb-md" style="gap:8px;">
+  <button class="btn primary" id="regenBtn" type="button">Regenerate planning</button>
+  <a class="btn" href="schedule.html">Edit schedule</a>
+</div>
+
+<div class="grid two">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h2 class="card-title" style="margin:0;">Paycheck Windows</h2>
+      <button class="btn btn-sm" id="refreshPlan">Refresh</button>
+    </div>
+    <div id="windows"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Window Details</h2>
+    <div id="items" class="small" style="color:var(--muted);">Select a window to see its bills.</div>
+  </div>
+</div>
+
+<script>
+let currentWindowId = null;
+
+function formatDate(dateStr){
+  try{
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+  }catch{ return dateStr; }
+}
+
+async function loadWindows(){
+  const notice = document.getElementById("planNotice");
+  const out = document.getElementById("windows");
+  notice.innerHTML = "";
+  out.innerHTML = spinnerHtml("Loading…");
+
+  try{
+    if(!requireLogin()) return;
+
+    const res = await api(`/v1/planning/windows`, { method:"GET" });
+    if(res.planning_incomplete){
+      notice.innerHTML = '<div class="notice warn"><strong>Some bills are unassigned</strong><div class="small">Try regenerating planning or check your pay schedule.</div></div>';
+    }
+
+    const windows = res.windows || [];
+    if(!windows.length){
+      out.innerHTML = '<div class="small" style="color:var(--muted);padding:8px 0;">No paycheck windows yet. <a href="schedule.html">Set your pay schedule</a> first.</div>';
+      return;
+    }
+
+    out.innerHTML = windows.map(w => `
+      <div class="window-card${currentWindowId === w.paycheck_window_id ? ' active' : ''}" onclick="pickWindow('${w.paycheck_window_id}')">
+        <div>
+          <div class="wc-dates">${formatDate(w.start_date)} – ${formatDate(w.end_date)}</div>
+          <div class="wc-meta">Unpaid: $${money(w.unpaid_total)}</div>
+        </div>
+        <div class="wc-amounts">
+          <div class="wc-total">$${money(w.window_total)}</div>
+          <div class="wc-unpaid">total</div>
+        </div>
+      </div>
+    `).join("");
+
+    // Auto-pick first window
+    if(!currentWindowId && windows.length) pickWindow(windows[0].paycheck_window_id);
+
+  }catch(err){
+    showError(notice, err);
+    out.textContent = "";
+  }
+}
+
+async function pickWindow(id){
+  currentWindowId = id;
+  // Highlight active card
+  document.querySelectorAll(".window-card").forEach(c => c.classList.remove("active"));
+  const active = document.querySelector(`[onclick="pickWindow('${id}')"]`);
+  if(active) active.classList.add("active");
+
+  const itemsEl = document.getElementById("items");
+  itemsEl.innerHTML = spinnerHtml("Loading…");
+  try{
+    const rows = await api(`/v1/planning/window/${id}/items`, { method:"GET" });
+    if(!rows.length){
+      itemsEl.innerHTML = '<div class="small" style="color:var(--muted);">No bills assigned to this window.</div>';
+      return;
+    }
+    itemsEl.innerHTML = `
+      <div class="table-wrap"><table class="table">
+        <thead>
+          <tr><th>Bill</th><th>Due</th><th>Status</th><th>Amount</th></tr>
+        </thead>
+        <tbody>
+          ${rows.map(o => {
+            const status = o.computed_status || "upcoming";
+            const badgeClass = status === "paid" ? "ok" : (status === "overdue" ? "bad" : (status === "due" ? "warn" : ""));
+            return `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(o.bill_name || "")}</strong>
+                  <div class="small">${escapeHtml(o.category || "")}</div>
+                </td>
+                <td class="small">${formatDate(o.due_date)}</td>
+                <td><span class="badge ${badgeClass}">${escapeHtml(status)}</span></td>
+                <td>$${money(o.amount)}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table></div>
+    `;
+  }catch(err){
+    itemsEl.innerHTML = '<div class="notice bad"><strong>Error</strong><div class="small">'+escapeHtml(err.message || String(err))+'</div></div>';
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("regenBtn").addEventListener("click", async ()=>{
+    const n = document.getElementById("planNotice");
+    n.innerHTML = "";
+    try{
+      await api(`/v1/schedule/regenerate`, { method:"POST" });
+      toast("Planning regenerated.", "ok");
+      currentWindowId = null;
+      await loadWindows();
+    }catch(err){
+      showError(n, err);
+    }
+  });
+
+  document.getElementById("refreshPlan").addEventListener("click", loadWindows);
+  loadWindows();
+});
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 CORIS. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>

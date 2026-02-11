@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CORIS • Dashboard</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="apple-touch-icon" href="../assets/favicon.png"/>
+  <link rel="stylesheet" href="../css/shared.css"/>
+  <script src="../js/shared.js" defer></script>
+  <style>
+    /* Dashboard-specific */
+    .dash-stats{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media(min-width:768px){
+      .dash-stats{ grid-template-columns: 1fr 1fr 1fr 1fr; }
+    }
+    .stat-card{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value{
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 2px;
+    }
+    .stat-label{
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card.accent .stat-value{ color: var(--accent-text); }
+    .stat-card.danger .stat-value{ color: var(--danger); }
+    .stat-card.warn .stat-value{ color: var(--warning); }
+
+    /* Next paycheck card */
+    .next-paycheck{
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 20px;
+    }
+    .np-icon{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .np-body{ flex:1; }
+    .np-title{
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .np-detail{
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .np-amount{
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-text);
+      text-align: right;
+    }
+    .np-amount-sub{
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* Upcoming bills list */
+    .bill-row{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .bill-row:last-child{ border-bottom: none; }
+    .bill-dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .bill-dot.upcoming{ background: var(--border); }
+    .bill-dot.due{ background: var(--warning); }
+    .bill-dot.overdue{ background: var(--danger); }
+    .bill-dot.paid{ background: var(--accent); }
+    .bill-info{ flex: 1; }
+    .bill-name{
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .bill-date{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .bill-amount{
+      font-size: 14px;
+      font-weight: 600;
+      text-align: right;
+    }
+    .bill-amount.paid{
+      color: var(--accent-text);
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+
+    /* Category bar */
+    .cat-bar-wrap{ margin-top: 8px; }
+    .cat-bar{
+      display: flex;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      background: var(--border-subtle);
+      margin-bottom: 10px;
+    }
+    .cat-bar-seg{
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .cat-legend{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cat-legend-item{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .cat-legend-dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+  </style>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XXXXXXXXXX");
+  </script>
+</head>
+<body>
+<header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/coris-logo.svg" alt="CORIS"/>
+        <div class="brand-title">
+          <strong>CORIS</strong>
+          <span>Bill companion</span>
+        </div>
+      </a>
+      <nav class="nav" id="mainNav">
+        <a data-nav href="dashboard.html">Dashboard</a>
+        <a data-nav href="templates.html">Templates</a>
+        <a data-nav href="schedule.html">Pay Schedule</a>
+        <a data-nav href="bills.html">Bills</a>
+        <a data-nav href="planning.html">Planning</a>
+        <a data-nav href="reminders.html">Reminders</a>
+        <a data-nav href="settings.html">Settings</a>
+        <a data-nav href="login.html">Login</a>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn" id="logoutBtn" type="button">Logout</button>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+
+<div class="page-header">
+  <h1 class="h1">Dashboard</h1>
+  <p class="sub">Your bills at a glance.</p>
+</div>
+
+<div id="dashNotice"></div>
+
+<!-- Stats row -->
+<div class="dash-stats" id="statsRow">
+  <div class="stat-card"><div class="stat-value">—</div><div class="stat-label">Upcoming</div></div>
+  <div class="stat-card warn"><div class="stat-value">—</div><div class="stat-label">Due today</div></div>
+  <div class="stat-card danger"><div class="stat-value">—</div><div class="stat-label">Overdue</div></div>
+  <div class="stat-card accent"><div class="stat-value">—</div><div class="stat-label">Paid</div></div>
+</div>
+
+<div class="grid two">
+  <!-- Next paycheck -->
+  <div class="card" id="nextPaycheckCard">
+    <h2 class="card-title">Next Paycheck Window</h2>
+    <div id="nextPaycheck"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+
+  <!-- Planning health -->
+  <div class="card">
+    <h2 class="card-title">Planning Health</h2>
+    <div id="planningHealth"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+</div>
+
+<!-- Upcoming bills -->
+<div class="card mt-md">
+  <h2 class="card-title">Upcoming Bills</h2>
+  <div id="upcomingBills"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+</div>
+
+<div class="grid two mt-md">
+  <!-- Monthly totals -->
+  <div class="card">
+    <h2 class="card-title">This Month</h2>
+    <div id="monthTotals"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+
+  <!-- Category breakdown -->
+  <div class="card">
+    <h2 class="card-title">By Category</h2>
+    <div id="categoryBreak"><span class="spinner-text"><span class="spinner"></span> Loading…</span></div>
+  </div>
+</div>
+
+<script>
+const CAT_COLORS = [
+  "#0d9488","#2563eb","#d97706","#dc2626","#7c3aed",
+  "#059669","#db2777","#4f46e5","#ca8a04","#64748b"
+];
+
+function daysFromNow(dateStr){
+  const d = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+function formatDate(dateStr){
+  try{
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+  }catch{ return dateStr; }
+}
+
+function relativeDay(dateStr){
+  const n = daysFromNow(dateStr);
+  if(n === 0) return "Today";
+  if(n === 1) return "Tomorrow";
+  if(n < 0) return `${Math.abs(n)}d ago`;
+  return `In ${n}d`;
+}
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+  const notice = document.getElementById("dashNotice");
+
+  try{
+    if(!requireLogin()) return;
+
+    // Fetch all data in parallel
+    const [occ, planning, integrity, schedule, templates] = await Promise.all([
+      api(`/v1/occurrences/me`, { method:"GET" }),
+      api(`/v1/planning/windows`, { method:"GET" }),
+      api(`/v1/planning/integrity`, { method:"GET" }),
+      api(`/v1/schedule/me`, { method:"GET" }).catch(() => null),
+      api(`/v1/templates/me`, { method:"GET" }).catch(() => []),
+    ]);
+
+    // Build template lookup for category
+    const tplMap = {};
+    if(Array.isArray(templates)){
+      templates.forEach(t => { tplMap[t.id] = t; });
+    }
+
+    // ── Stats row ──
+    const counts = { upcoming:0, due:0, overdue:0, paid:0 };
+    let unpaidTotal = 0, paidTotal = 0;
+
+    occ.forEach(o => {
+      const s = o.computed_status;
+      if(s === "paid") counts.paid++;
+      else if(s === "due") counts.due++;
+      else if(s === "overdue") counts.overdue++;
+      else counts.upcoming++;
+
+      if(s === "paid") paidTotal += Number(o.amount_paid || o.amount || 0);
+      else unpaidTotal += Number(o.amount || 0);
+    });
+
+    const cards = document.querySelectorAll(".dash-stats .stat-card .stat-value");
+    cards[0].textContent = counts.upcoming;
+    cards[1].textContent = counts.due;
+    cards[2].textContent = counts.overdue;
+    cards[3].textContent = counts.paid;
+
+    // ── Next paycheck window ──
+    const npOut = document.getElementById("nextPaycheck");
+    const windows = planning.windows || [];
+    const today = new Date().toISOString().split("T")[0];
+    const nextWindow = windows.find(w => w.end_date >= today);
+
+    if(nextWindow){
+      const windowBills = occ.filter(o =>
+        o.paycheck_window_id === nextWindow.id && o.computed_status !== "paid"
+      );
+      const windowTotal = windowBills.reduce((s,o) => s + Number(o.amount||0), 0);
+      const windowPaid = occ.filter(o =>
+        o.paycheck_window_id === nextWindow.id && o.computed_status === "paid"
+      ).reduce((s,o) => s + Number(o.amount_paid || o.amount || 0), 0);
+
+      npOut.innerHTML = `
+        <div class="next-paycheck">
+          <div class="np-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="np-body">
+            <div class="np-title">${formatDate(nextWindow.start_date)} – ${formatDate(nextWindow.end_date)}</div>
+            <div class="np-detail">${windowBills.length} unpaid bill${windowBills.length !== 1 ? "s" : ""} remaining</div>
+          </div>
+          <div>
+            <div class="np-amount">$${money(windowTotal)}</div>
+            <div class="np-amount-sub">$${money(windowPaid)} paid</div>
+          </div>
+        </div>
+      `;
+    } else {
+      npOut.innerHTML = '<div class="small" style="padding:8px 0;">No upcoming paycheck windows. <a href="schedule.html">Set your pay schedule</a>.</div>';
+    }
+
+    // ── Planning health ──
+    const phOut = document.getElementById("planningHealth");
+    const unassignedCount = integrity.unassigned ? integrity.unassigned.length : 0;
+    const inactiveCount = integrity.assigned_to_inactive_windows ? integrity.assigned_to_inactive_windows.length : 0;
+    const planOk = unassignedCount === 0 && inactiveCount === 0;
+
+    phOut.innerHTML = `
+      <div class="notice ${planOk ? "ok" : "warn"}" style="margin-bottom:10px;">
+        <strong>${planOk ? "All clear" : "Needs attention"}</strong>
+        <div class="small">${planOk
+          ? "Every bill is assigned to a paycheck window."
+          : `${unassignedCount} unassigned bill${unassignedCount !== 1 ? "s" : ""}${inactiveCount > 0 ? `, ${inactiveCount} in inactive windows` : ""}`
+        }</div>
+      </div>
+      <div class="row" style="gap:8px;">
+        <a class="btn btn-sm" href="planning.html">View planning</a>
+        ${!planOk ? '<a class="btn btn-sm" href="schedule.html">Fix schedule</a>' : ""}
+      </div>
+    `;
+
+    // ── Upcoming bills (next 10 unpaid, sorted by due date) ──
+    const ubOut = document.getElementById("upcomingBills");
+    const unpaid = occ
+      .filter(o => o.computed_status !== "paid")
+      .sort((a,b) => a.due_date.localeCompare(b.due_date))
+      .slice(0, 10);
+
+    if(unpaid.length === 0){
+      ubOut.innerHTML = '<div class="small" style="padding:8px 0;">No upcoming bills. Nice! <a href="templates.html">Create a template</a> to get started.</div>';
+    } else {
+      ubOut.innerHTML = unpaid.map(o => {
+        const status = o.computed_status;
+        const tpl = tplMap[o.template_id];
+        const name = (tpl && tpl.bill_name) || o.bill_name || "Bill";
+        return `
+          <div class="bill-row">
+            <div class="bill-dot ${status}"></div>
+            <div class="bill-info">
+              <div class="bill-name">${escapeHtml(name)}</div>
+              <div class="bill-date">${formatDate(o.due_date)} · ${relativeDay(o.due_date)}</div>
+            </div>
+            <div class="bill-amount">$${money(o.amount)}</div>
+          </div>
+        `;
+      }).join("") + `
+        <div style="margin-top:10px;">
+          <a class="btn btn-sm" href="bills.html">View all bills</a>
+        </div>
+      `;
+    }
+
+    // ── This month totals ──
+    const mtOut = document.getElementById("monthTotals");
+    const now = new Date();
+    const thisMonth = now.toISOString().slice(0, 7); // "2026-02"
+    const monthOcc = occ.filter(o => o.due_date && o.due_date.startsWith(thisMonth));
+    const monthDue = monthOcc.reduce((s,o) => s + Number(o.amount || 0), 0);
+    const monthPaid = monthOcc.filter(o => o.computed_status === "paid")
+      .reduce((s,o) => s + Number(o.amount_paid || o.amount || 0), 0);
+    const monthRemaining = monthDue - monthPaid;
+    const monthPct = monthDue > 0 ? Math.round((monthPaid / monthDue) * 100) : 0;
+
+    mtOut.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+        <div>
+          <div style="font-size:24px;font-weight:700;letter-spacing:-0.3px;">$${money(monthDue)}</div>
+          <div class="small">Total due this month</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:18px;font-weight:700;color:var(--accent-text);">$${money(monthPaid)}</div>
+          <div class="small">Paid so far</div>
+        </div>
+      </div>
+      <div style="background:var(--border-subtle);border-radius:5px;height:8px;overflow:hidden;">
+        <div style="background:var(--accent);height:100%;width:${monthPct}%;border-radius:5px;transition:width 0.3s;"></div>
+      </div>
+      <div class="small" style="margin-top:6px;text-align:center;">${monthPct}% paid · $${money(monthRemaining)} remaining</div>
+    `;
+
+    // ── Category breakdown ──
+    const cbOut = document.getElementById("categoryBreak");
+    const catTotals = {};
+    occ.filter(o => o.computed_status !== "paid").forEach(o => {
+      const tpl = tplMap[o.template_id];
+      const cat = (tpl && tpl.category) || "Uncategorized";
+      catTotals[cat] = (catTotals[cat] || 0) + Number(o.amount || 0);
+    });
+
+    const catEntries = Object.entries(catTotals).sort((a,b) => b[1] - a[1]);
+    const catTotal = catEntries.reduce((s, e) => s + e[1], 0);
+
+    if(catEntries.length === 0){
+      cbOut.innerHTML = '<div class="small" style="padding:8px 0;">No unpaid bills to categorize.</div>';
+    } else {
+      const barHtml = catEntries.map((e, i) => {
+        const pct = catTotal > 0 ? (e[1] / catTotal * 100) : 0;
+        return `<div class="cat-bar-seg" style="width:${pct}%;background:${CAT_COLORS[i % CAT_COLORS.length]};"></div>`;
+      }).join("");
+
+      const legendHtml = catEntries.map((e, i) => {
+        return `
+          <div class="cat-legend-item">
+            <div class="cat-legend-dot" style="background:${CAT_COLORS[i % CAT_COLORS.length]};"></div>
+            ${escapeHtml(e[0])} · $${money(e[1])}
+          </div>
+        `;
+      }).join("");
+
+      cbOut.innerHTML = `
+        <div class="cat-bar-wrap">
+          <div class="cat-bar">${barHtml}</div>
+          <div class="cat-legend">${legendHtml}</div>
+        </div>
+      `;
+    }
+
+  }catch(err){
+    showError(notice, err);
+  }
+});
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 CORIS. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>
