@@ -5,13 +5,13 @@
 # Replace YOUR_API_URL with your actual API domain (e.g. https://api.coris.app)
 [[redirects]]
   from = "/v1/*"
-  to = "https://coris-api-production.up.railway.app/v1/:splat"
+  to = "YOUR_API_URL/v1/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/health"
-  to = "https://coris-api-production.up.railway.app/health"
+  to = "YOUR_API_URL/health"
   status = 200
   force = true
 

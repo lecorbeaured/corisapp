@@ -27,20 +27,111 @@ git push -u origin main
 
 ---
 
-## STEP 2: Railway — PostgreSQL Database
+## STEP 2: Railway — Set Up the Database
 
-1. Go to https://railway.app → **New Project**
-2. Click **"Provision PostgreSQL"**
-3. Once created, click the PostgreSQL service → **Variables** tab
-4. Copy the `DATABASE_URL` value (you'll need this in Step 3)
-5. Click **Data** tab → **Query** → paste and run your schema SQL:
-   - First: run your original Phase 1–4 schema SQL (the one that creates tables, views, functions, triggers)
-   - Then: run `deploy/migrations/post-schema-migrations.sql` (adds auth columns + password reset table)
-6. Verify in the Query tab:
-   ```sql
-   SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;
-   ```
-   You should see: `bill_occurrences`, `bill_templates`, `password_resets`, `pay_schedules`, `paycheck_windows`, `reminders`, `users`
+You already have PostgreSQL provisioned on Railway. Now you need to:
+- Get the connection details from Railway
+- Connect pgAdmin to it
+- Run the SQL that creates all the tables CORIS needs
+
+### 2A: Get connection details from Railway
+
+1. Open your Railway project
+2. Click on the **PostgreSQL** service (the database icon)
+3. Click the **Variables** tab
+4. You'll see a list of environment variables. Find and copy these 5 values somewhere safe (a notepad):
+
+   | Variable | What it is | Example |
+   |---|---|---|
+   | `PGHOST` | Server address | `roundhouse.proxy.rlwy.net` |
+   | `PGPORT` | Port number | `54312` |
+   | `PGUSER` | Username | `postgres` |
+   | `PGPASSWORD` | Password | `aBcDeFgHiJkL123` |
+   | `PGDATABASE` | Database name | `railway` |
+
+   Also copy the full `DATABASE_URL` — you'll need it in Step 3.
+
+### 2B: Connect pgAdmin to Railway
+
+1. Open **pgAdmin** on your computer
+2. In the left sidebar, right-click **"Servers"** → **Register** → **Server...**
+3. A dialog box opens with tabs. Fill in:
+
+   **General tab:**
+   - **Name:** `CORIS Railway` (this is just a label, call it whatever you want)
+
+   **Connection tab:**
+   - **Host name/address:** paste your `PGHOST` value (e.g. `roundhouse.proxy.rlwy.net`)
+   - **Port:** paste your `PGPORT` value (e.g. `54312`)
+   - **Maintenance database:** paste your `PGDATABASE` value (e.g. `railway`)
+   - **Username:** paste your `PGUSER` value (e.g. `postgres`)
+   - **Password:** paste your `PGPASSWORD` value
+   - **Save password?** check this box so you don't have to re-enter it
+
+4. Click **Save**
+5. In the left sidebar, you should now see **CORIS Railway** under Servers. Click the arrow to expand it. If it connects successfully, you'll see your database listed.
+
+### 2C: Open the Query Tool
+
+1. In the left sidebar, expand: **CORIS Railway** → **Databases** → **railway** (or whatever your `PGDATABASE` is)
+2. Click on the database name **railway** to select it (it should be highlighted)
+3. In the top menu, click **Tools** → **Query Tool**
+4. A blank SQL editor opens on the right side — this is where you'll paste and run SQL
+
+### 2D: Run the schema SQL
+
+You need to run SQL in **two batches**. Do them in order.
+
+**Batch 1: Core schema**
+
+This file creates all the tables, views, functions, and triggers CORIS needs.
+
+1. Open the file `deploy/schema.sql` from the zip in a text editor
+2. Select all → Copy
+3. Go back to pgAdmin's Query Tool
+4. Paste it into the SQL editor
+5. Click the **▶ Execute** button (play button) in the toolbar, or press **F5**
+6. You should see "Commands completed successfully" at the bottom
+
+**Batch 2: Auth & password reset migrations**
+
+1. Clear the query editor (select all → delete)
+2. Open the file `deploy/migrations/post-schema-migrations.sql` from the zip in a text editor
+3. Copy the entire contents
+4. Paste into the pgAdmin query editor
+5. Click **▶ Execute** (or F5)
+6. You should see "Commands completed successfully" again
+
+### 2E: Verify everything was created
+
+1. Clear the query editor
+2. Paste this and execute:
+
+```sql
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+ORDER BY table_name;
+```
+
+3. You should see these tables in the results:
+
+```
+bill_occurrences
+bill_templates
+password_resets
+pay_schedules
+paycheck_windows
+reminders
+users
+```
+
+If you see all 7 tables, your database is ready. Move on to Step 3.
+
+**If something went wrong:**
+- If you see an error like "relation already exists" — that's fine, it means the table was already created
+- If you see "syntax error" — make sure you copied the entire SQL file, not just part of it
+- If pgAdmin won't connect — double-check the host, port, username, and password from Railway. Make sure there are no extra spaces when you paste
 
 ---
 
