@@ -169,7 +169,6 @@ SELECT
   bt.category,
   bt.frequency,
   bt.is_variable,
-  o.paycheck_window_id,
   CASE
     WHEN o.paid_date IS NOT NULL THEN 'paid'
     WHEN o.due_date < CURRENT_DATE THEN 'overdue'
