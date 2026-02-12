@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { query, one } from "../lib/db.js";
 import { createMailer } from "../lib/mailer.js";
 
@@ -14,14 +15,10 @@ const ConfirmBody = z.object({
 });
 
 function cryptoRandomToken(): string {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const crypto = require("crypto");
   return crypto.randomBytes(32).toString("hex");
 }
 
 function sha256(value: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const crypto = require("crypto");
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 

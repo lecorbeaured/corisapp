@@ -2,6 +2,7 @@ import fp from "fastify-plugin";
 import type { FastifyPluginAsync } from "fastify";
 import fastifyJwt from "@fastify/jwt";
 import cookie from "@fastify/cookie";
+import crypto from "crypto";
 import { query } from "./db.js";
 
 declare module "@fastify/jwt" {
@@ -112,9 +113,6 @@ const plugin: FastifyPluginAsync = async (app) => {
 };
 
 function cryptoRandom(){
-  // Node 18+ crypto
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const crypto = require("crypto");
   return crypto.randomBytes(24).toString("hex");
 }
 
