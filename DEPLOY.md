@@ -143,7 +143,7 @@ If you see all 7 tables, your database is ready. Move on to Step 3.
 
    **Root Directory:** `backend`
    
-   **Build Command:** `npm install && npm run build`
+   **Build Command:** `npm install --include=dev && npm run build`
    
    **Start Command:** `npm start`
 
